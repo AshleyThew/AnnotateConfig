@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+dist/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.war
+*.zip
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.iws
+*.ipr
+
+# Build output
+out/
+target/
+bin/
+
+# Local environment
+.env
+.env.local
+
+# Misc
+*.log
+.project
+.classpath
+.settings/
