@@ -47,7 +47,7 @@ class ConfigBinderEdgeTest {
 
     @ConfigRoot
     static final class BinderMigrationConfig {
-        @ConfigMigrate({"legacy.first", "legacy.second"})
+        @ConfigMigrate({ "legacy.first", "legacy.second" })
         static int value = 7;
 
         static void reset() {

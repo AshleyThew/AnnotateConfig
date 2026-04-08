@@ -27,9 +27,8 @@ class AnnotateConfigApiTest {
         handle.save();
 
         Files.writeString(file, String.join("\n",
-            "count: 9",
-            ""
-        ));
+                "count: 9",
+                ""));
         handle.reload();
 
         assertEquals(9, ReloadConfig.count);
@@ -40,15 +39,14 @@ class AnnotateConfigApiTest {
         NoRootConfig.reset();
         Path file = tempDir.resolve("no-root.yml");
         Files.writeString(file, String.join("\n",
-            "my-value: 7",
-            "unknown: keep",
-            ""
-        ));
+                "my-value: 7",
+                "unknown: keep",
+                ""));
 
         AnnotateConfig.builder(NoRootConfig.class, file)
-            .preserveUnknownFields(false)
-            .build()
-            .load();
+                .preserveUnknownFields(false)
+                .build()
+                .load();
 
         assertEquals(7, NoRootConfig.myValue);
         Map<String, Object> yaml = TestYaml.readMap(file);

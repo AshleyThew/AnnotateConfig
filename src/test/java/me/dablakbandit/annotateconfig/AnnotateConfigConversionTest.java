@@ -24,17 +24,16 @@ class AnnotateConfigConversionTest {
         PrimitiveConfig.reset();
         Path file = tempDir.resolve("primitive.yml");
         Files.writeString(file, String.join("\n",
-            "int-value: '12'",
-            "long-value: '13'",
-            "double-value: '1.5'",
-            "float-value: '2.5'",
-            "short-value: '6'",
-            "byte-value: '7'",
-            "bool-value: 'true'",
-            "char-value: 'Z'",
-            "mode: 'SECOND'",
-            ""
-        ));
+                "int-value: '12'",
+                "long-value: '13'",
+                "double-value: '1.5'",
+                "float-value: '2.5'",
+                "short-value: '6'",
+                "byte-value: '7'",
+                "bool-value: 'true'",
+                "char-value: 'Z'",
+                "mode: 'SECOND'",
+                ""));
 
         ConfigHandle.of(PrimitiveConfig.class, file).load();
 
@@ -54,10 +53,9 @@ class AnnotateConfigConversionTest {
         CollectionShapeConfig.reset();
         Path file = tempDir.resolve("list-shape.yml");
         Files.writeString(file, String.join("\n",
-            "numbers: 1",
-            "named: {}",
-            ""
-        ));
+                "numbers: 1",
+                "named: {}",
+                ""));
 
         assertThrows(IllegalArgumentException.class, () -> ConfigHandle.of(CollectionShapeConfig.class, file).load());
     }
@@ -67,10 +65,9 @@ class AnnotateConfigConversionTest {
         CollectionShapeConfig.reset();
         Path file = tempDir.resolve("map-shape.yml");
         Files.writeString(file, String.join("\n",
-            "numbers: []",
-            "named: 1",
-            ""
-        ));
+                "numbers: []",
+                "named: 1",
+                ""));
 
         assertThrows(IllegalArgumentException.class, () -> ConfigHandle.of(CollectionShapeConfig.class, file).load());
     }

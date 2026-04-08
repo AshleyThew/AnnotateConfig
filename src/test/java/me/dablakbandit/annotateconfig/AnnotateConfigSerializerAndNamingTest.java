@@ -32,9 +32,9 @@ class AnnotateConfigSerializerAndNamingTest {
         Path file = tempDir.resolve("fancy.yml");
 
         AnnotateConfig.builder(FancyConfig.class, file)
-            .serializer(Fancy.class, new FancySerializer())
-            .build()
-            .save();
+                .serializer(Fancy.class, new FancySerializer())
+                .build()
+                .save();
 
         Map<String, Object> yaml = TestYaml.readMap(file);
         assertEquals("ON", TestYaml.get(yaml, "fancy.state"));
@@ -44,19 +44,18 @@ class AnnotateConfigSerializerAndNamingTest {
         assertEquals(List.of("ON", "Q"), meta);
 
         Files.writeString(file, String.join("\n",
-            "fancy:",
-            "  state: 'OFF'",
-            "  marker: R",
-            "  meta:",
-            "    - 'OFF'",
-            "    - R",
-            ""
-        ));
+                "fancy:",
+                "  state: 'OFF'",
+                "  marker: R",
+                "  meta:",
+                "    - 'OFF'",
+                "    - R",
+                ""));
 
         AnnotateConfig.builder(FancyConfig.class, file)
-            .serializer(Fancy.class, new FancySerializer())
-            .build()
-            .load();
+                .serializer(Fancy.class, new FancySerializer())
+                .build()
+                .load();
 
         assertEquals(new Fancy(State.OFF, 'R', List.of(State.OFF, 'R')), FancyConfig.fancy);
     }
@@ -66,9 +65,8 @@ class AnnotateConfigSerializerAndNamingTest {
         NullConfig.reset();
         Path file = tempDir.resolve("null.yml");
         Files.writeString(file, String.join("\n",
-            "value: null",
-            ""
-        ));
+                "value: null",
+                ""));
 
         ConfigHandle.of(NullConfig.class, file).load();
         assertNull(NullConfig.value);
@@ -127,10 +125,9 @@ class AnnotateConfigSerializerAndNamingTest {
                 }
             }
             return new Fancy(
-                State.valueOf(String.valueOf(map.get("state"))),
-                String.valueOf(map.get("marker")).charAt(0),
-                converted
-            );
+                    State.valueOf(String.valueOf(map.get("state"))),
+                    String.valueOf(map.get("marker")).charAt(0),
+                    converted);
         }
     }
 }

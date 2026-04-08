@@ -16,16 +16,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SchemaScannerInternalTest {
     @Test
     void scansNestedSectionsWithNonEmptyPrefixAndRelativeMigrationExpansion() {
-        ConfigSchema schema = SchemaScanner.scan(NestedScanConfig.class, NamingStrategy.LOWER_KEBAB_CASE, true, new SerializerRegistry());
+        ConfigSchema schema = SchemaScanner.scan(NestedScanConfig.class, NamingStrategy.LOWER_KEBAB_CASE, true,
+                new SerializerRegistry());
 
         Map<String, BoundField> byPath = schema.fields().stream().collect(Collectors.toMap(BoundField::path, it -> it));
 
         assertTrue(byPath.containsKey("outer.inner.value"));
         assertTrue(byPath.containsKey("outer.inner.absolute.path"));
         assertEquals(
-            java.util.List.of("legacy.full.path", "outer.inner.old-relative"),
-            byPath.get("outer.inner.value").migrationPaths()
-        );
+                java.util.List.of("legacy.full.path", "outer.inner.old-relative"),
+                byPath.get("outer.inner.value").migrationPaths());
 
         assertTrue(schema.comments().containsKey("outer"));
         assertTrue(schema.comments().containsKey("outer.inner.value"));
@@ -38,7 +38,7 @@ class SchemaScannerInternalTest {
             @ConfigComment("inner section")
             static final class Inner {
                 @ConfigComment("value")
-                @ConfigMigrate({"legacy.full.path", "old-relative"})
+                @ConfigMigrate({ "legacy.full.path", "old-relative" })
                 static int value = 1;
 
                 @ConfigComment("blank path ignored")
