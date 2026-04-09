@@ -75,4 +75,22 @@ class YamlSupportInternalTest {
         assertTrue(rendered.contains("message:"));
         assertTrue(rendered.contains("line2"));
     }
+
+    @Test
+    void dumpWithCommentsEmitsPlainMappingsForJavaBeans() {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("bean", new SampleBean());
+
+        String rendered = YamlSupport.dumpWithComments(data, Map.of(), List.of());
+
+        assertFalse(rendered.contains("!!"));
+        assertTrue(rendered.contains("bean:"));
+        assertTrue(rendered.contains("name: value"));
+        assertTrue(rendered.contains("count: 3"));
+    }
+
+    static final class SampleBean {
+        public String name = "value";
+        public int count = 3;
+    }
 }

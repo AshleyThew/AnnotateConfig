@@ -25,10 +25,12 @@ final class TypeConverter {
             Type rawType = parameterizedType.getRawType();
             if (rawType instanceof Class<?> rawClass) {
                 if (Collection.class.isAssignableFrom(rawClass)) {
-                    return convertCollection(raw, rawClass, parameterizedType.getActualTypeArguments()[0], serializerRegistry);
+                    return convertCollection(raw, rawClass, parameterizedType.getActualTypeArguments()[0],
+                            serializerRegistry);
                 }
                 if (Map.class.isAssignableFrom(rawClass)) {
-                    return convertMap(raw, parameterizedType.getActualTypeArguments()[0], parameterizedType.getActualTypeArguments()[1], serializerRegistry);
+                    return convertMap(raw, parameterizedType.getActualTypeArguments()[0],
+                            parameterizedType.getActualTypeArguments()[1], serializerRegistry);
                 }
             }
         }
@@ -72,14 +74,41 @@ final class TypeConverter {
             return value.isEmpty() ? '\0' : value.charAt(0);
         }
         if (clazz.isEnum()) {
-            @SuppressWarnings({"unchecked", "rawtypes"})
+            @SuppressWarnings({ "unchecked", "rawtypes" })
             Object enumValue = Enum.valueOf((Class<? extends Enum>) clazz.asSubclass(Enum.class), String.valueOf(raw));
             return enumValue;
+        }
+        if (raw instanceof Map<?, ?> map) {
+            return convertMapToBean(map, clazz, serializerRegistry);
         }
         return raw;
     }
 
-    private static Object convertCollection(Object raw, Class<?> rawClass, Type elementType, SerializerRegistry serializerRegistry) {
+    private static Object convertMapToBean(Map<?, ?> map, Class<?> clazz, SerializerRegistry serializerRegistry) {
+        try {
+            java.lang.reflect.Constructor<?> constructor = clazz.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Object instance = constructor.newInstance();
+            for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
+                    continue;
+                }
+                Object rawValue = map.get(field.getName());
+                if (rawValue == null) {
+                    continue;
+                }
+                field.setAccessible(true);
+                field.set(instance, convertForField(rawValue, field.getGenericType(), serializerRegistry));
+            }
+            return instance;
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException(
+                    "Unable to convert map to " + clazz.getName() + ": " + e.getMessage(), e);
+        }
+    }
+
+    private static Object convertCollection(Object raw, Class<?> rawClass, Type elementType,
+            SerializerRegistry serializerRegistry) {
         if (!(raw instanceof Collection<?> collection)) {
             throw new IllegalArgumentException("Expected a collection but got: " + raw.getClass().getName());
         }
@@ -111,7 +140,8 @@ final class TypeConverter {
             var serializer = serializerRegistry.find(clazz);
             if (serializer != null) {
                 @SuppressWarnings("unchecked")
-                Object serialized = ((me.dablakbandit.annotateconfig.ConfigSerializer<Object>) serializer).serialize(value);
+                Object serialized = ((me.dablakbandit.annotateconfig.ConfigSerializer<Object>) serializer)
+                        .serialize(value);
                 return normalizeSerializedValue(serialized);
             }
         }
@@ -141,7 +171,8 @@ final class TypeConverter {
                 valueType = parameterizedType.getActualTypeArguments()[1];
             }
             for (Map.Entry<?, ?> entry : map.entrySet()) {
-                normalized.put(normalizeForYaml(entry.getKey(), keyType, serializerRegistry), normalizeForYaml(entry.getValue(), valueType, serializerRegistry));
+                normalized.put(normalizeForYaml(entry.getKey(), keyType, serializerRegistry),
+                        normalizeForYaml(entry.getValue(), valueType, serializerRegistry));
             }
             return normalized;
         }

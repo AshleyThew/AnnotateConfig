@@ -24,6 +24,14 @@ public final class ConfigHandle {
         return schema.rootType();
     }
 
+    public Object rootInstance() {
+        return schema.rootInstance();
+    }
+
+    public <T> T rootInstance(Class<T> type) {
+        return type.cast(schema.rootInstance());
+    }
+
     public void load() throws IOException {
         ConfigBinder.load(file, schema);
     }
@@ -38,5 +46,9 @@ public final class ConfigHandle {
 
     public static ConfigHandle of(Class<?> rootType, Path file) {
         return AnnotateConfig.builder(rootType, file).build();
+    }
+
+    public static ConfigHandle of(Object rootInstance, Path file) {
+        return AnnotateConfig.builder(rootInstance, file).build();
     }
 }

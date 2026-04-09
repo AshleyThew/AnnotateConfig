@@ -4,17 +4,23 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.introspector.Property;
+import org.yaml.snakeyaml.nodes.MappingNode;
+import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 final class YamlSupport {
     private static final Yaml LOADER = new Yaml(new SafeConstructor(new LoaderOptions()));
-    private static final Yaml WRITER = new Yaml(new Representer(defaultDumperOptions()), defaultDumperOptions());
+    private static final DumperOptions DUMPER_OPTIONS = defaultDumperOptions();
+    private static final Yaml WRITER = new Yaml(new PlainMappingRepresenter(DUMPER_OPTIONS), DUMPER_OPTIONS);
 
     private YamlSupport() {
     }
@@ -38,6 +44,7 @@ final class YamlSupport {
         if ("{}\n".equals(dumped)) {
             dumped = "";
         }
+
         StringBuilder builder = new StringBuilder();
         for (String line : header) {
             appendComment(builder, 0, line);
@@ -222,5 +229,18 @@ final class YamlSupport {
         options.setIndicatorIndent(1);
         options.setSplitLines(false);
         return options;
+    }
+
+    private static final class PlainMappingRepresenter extends Representer {
+        private PlainMappingRepresenter(DumperOptions options) {
+            super(options);
+        }
+
+        @Override
+        protected MappingNode representJavaBean(Set<Property> properties, Object javaBean) {
+            MappingNode node = super.representJavaBean(new LinkedHashSet<>(properties), javaBean);
+            node.setTag(Tag.MAP);
+            return node;
+        }
     }
 }

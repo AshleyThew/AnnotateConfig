@@ -2,6 +2,7 @@ package me.dablakbandit.annotateconfig.internal;
 
 import me.dablakbandit.annotateconfig.ConfigHandle;
 import me.dablakbandit.annotateconfig.annotation.ConfigMigrate;
+import me.dablakbandit.annotateconfig.annotation.ConfigOptional;
 import me.dablakbandit.annotateconfig.annotation.ConfigRoot;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +46,44 @@ class ConfigBinderEdgeTest {
         }
     }
 
+    @Test
+    void optionalNullValueIsNotWrittenDuringSave() throws IOException {
+        BinderOptionalConfig.reset();
+        Path file = Files.createTempFile("annotate-config-optional-save", ".yml");
+        try {
+            ConfigHandle.of(BinderOptionalConfig.class, file).save();
+
+            var yaml = YamlSupport.loadMap(Files.readString(file));
+            assertFalse(YamlSupport.containsPath(yaml, "optional-name"));
+            assertEquals(5, YamlSupport.getValue(yaml, "required-number"));
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
+    @Test
+    void optionalValueLoadsWhenPresentAndIsPreservedOnRewrite() throws IOException {
+        BinderOptionalConfig.reset();
+        Path file = Files.createTempFile("annotate-config-optional-load", ".yml");
+        try {
+            Files.writeString(file, String.join("\n",
+                    "optional-name: custom",
+                    "required-number: 9",
+                    ""));
+
+            ConfigHandle.of(BinderOptionalConfig.class, file).load();
+
+            assertEquals("custom", BinderOptionalConfig.optionalName);
+            assertEquals(9, BinderOptionalConfig.requiredNumber);
+
+            var yaml = YamlSupport.loadMap(Files.readString(file));
+            assertEquals("custom", YamlSupport.getValue(yaml, "optional-name"));
+            assertEquals(9, YamlSupport.getValue(yaml, "required-number"));
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
     @ConfigRoot
     static final class BinderMigrationConfig {
         @ConfigMigrate({ "legacy.first", "legacy.second" })
@@ -61,6 +100,19 @@ class ConfigBinderEdgeTest {
 
         static void reset() {
             number = 5;
+        }
+    }
+
+    @ConfigRoot
+    static final class BinderOptionalConfig {
+        @ConfigOptional
+        static String optionalName;
+
+        static int requiredNumber = 5;
+
+        static void reset() {
+            optionalName = null;
+            requiredNumber = 5;
         }
     }
 }

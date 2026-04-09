@@ -40,7 +40,8 @@ public final class ConfigBinder {
 
             try {
                 if (resolved != null || YamlSupport.containsPath(current, boundField.path())) {
-                    field.set(null, TypeConverter.convertForField(resolved, field.getGenericType(), schema.serializerRegistry()));
+                    field.set(boundField.target(), TypeConverter.convertForField(resolved, field.getGenericType(),
+                            schema.serializerRegistry()));
                 }
             } catch (IllegalAccessException exception) {
                 throw new IllegalStateException("Unable to set config field: " + field, exception);
@@ -55,11 +56,16 @@ public final class ConfigBinder {
             Field field = boundField.field();
             Object value;
             try {
-                value = field.get(null);
+                value = field.get(boundField.target());
             } catch (IllegalAccessException exception) {
                 throw new IllegalStateException("Unable to read config field: " + field, exception);
             }
-            YamlSupport.setValue(output, boundField.path(), TypeConverter.normalizeForYaml(value, field.getGenericType(), schema.serializerRegistry()));
+            if (boundField.optional() && value == null) {
+                YamlSupport.removeValue(output, boundField.path());
+                continue;
+            }
+            YamlSupport.setValue(output, boundField.path(),
+                    TypeConverter.normalizeForYaml(value, field.getGenericType(), schema.serializerRegistry()));
         }
 
         String rendered = YamlSupport.dumpWithComments(output, schema.comments(), schema.header());
