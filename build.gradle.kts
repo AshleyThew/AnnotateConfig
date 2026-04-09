@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.github.AshleyThew"
-version = System.getenv("TAG") ?: "v1.0.5-alpha"
+version = System.getenv("TAG") ?: "v1.0.1-alpha"
 
 java {
     toolchain {
