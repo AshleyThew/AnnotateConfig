@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SchemaScannerInternalTest {
@@ -55,6 +56,39 @@ class SchemaScannerInternalTest {
         assertSame(root, outerField.get(nestedTarget));
     }
 
+    @Test
+    void scanOverloadWithoutProvidedInstanceUsesNullForStaticOnlyConfigs() {
+        ConfigSchema schema = SchemaScanner.scan(StaticOnlyScanConfig.class, NamingStrategy.LOWER_KEBAB_CASE, true,
+                new SerializerRegistry());
+
+        Map<String, BoundField> byPath = schema.fields().stream().collect(Collectors.toMap(BoundField::path, it -> it));
+        assertTrue(byPath.containsKey("value"));
+        assertNull(schema.rootInstance());
+        assertNull(byPath.get("value").target());
+    }
+
+    @Test
+    void rejectsProvidedRootInstanceOfWrongType() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> SchemaScanner.scan(StaticOnlyScanConfig.class, NamingStrategy.LOWER_KEBAB_CASE, true,
+                        new SerializerRegistry(), new Object()));
+        assertTrue(exception.getMessage().contains("Provided root instance is not of type"));
+    }
+
+    @Test
+    void preservesExistingSectionFieldInstanceWhenAlreadySet() {
+        SerializerRegistry registry = new SerializerRegistry();
+        SectionFieldOwner owner = new SectionFieldOwner();
+        SectionFieldOwner.Section section = owner.section;
+
+        ConfigSchema schema = SchemaScanner.scan(SectionFieldOwner.class, NamingStrategy.LOWER_KEBAB_CASE, true,
+                registry, owner);
+
+        Map<String, BoundField> byPath = schema.fields().stream().collect(Collectors.toMap(BoundField::path, it -> it));
+        assertTrue(byPath.containsKey("section.value"));
+        assertSame(section, byPath.get("section.value").target());
+    }
+
     static final class NestedScanConfig {
         @ConfigComment("outer section")
         static final class Outer {
@@ -79,6 +113,18 @@ class SchemaScannerInternalTest {
 
         class Inner {
             int nestedValue = 2;
+        }
+    }
+
+    static final class StaticOnlyScanConfig {
+        static int value = 10;
+    }
+
+    static final class SectionFieldOwner {
+        Section section = new Section();
+
+        static final class Section {
+            int value = 3;
         }
     }
 }

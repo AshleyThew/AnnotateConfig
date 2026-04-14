@@ -71,6 +71,31 @@ handle.load();
 handle.save();
 ```
 
+Generated YAML (`config/example.yml`):
+```yaml
+# Example config
+# Generated on load/save
+
+# Enable the feature
+enabled: true
+
+# Maximum number of attempts
+max-retries: 5
+
+# Legacy value migrated from old configs
+migrated-enabled: true
+
+# Text channels to allow
+channels:
+  - global
+  - staff
+
+# Persistence settings
+storage:
+  # Storage type
+  type: sqlite
+```
+
 ## Non-Static Nested Usage
 
 You can also model sections as non-static nested classes.
@@ -110,6 +135,14 @@ int port = providedRoot.database.port;
 providedHandle.save();
 ```
 
+Generated YAML (`config/instance.yml`):
+```yaml
+max-retries: 3
+database:
+  host: localhost
+  port: 3306
+```
+
 For non-static nested sections, declare a root field of that nested type (for example `database`) so values are Java-accessible (`instance.database.host`) after `load()`.
 
 ## Custom Serializers
@@ -145,6 +178,22 @@ ConfigSerializer<SpawnPoint> serializer = new ConfigSerializer<>() {
 ConfigHandle handle = AnnotateConfig.builder(ExampleConfig.class, file)
     .serializer(SpawnPoint.class, serializer)
     .build();
+```
+
+Example usage in a config:
+```java
+@ConfigComment("Starting spawn point")
+public static SpawnPoint defaultSpawn = new SpawnPoint("world", 0, 64, 0);
+```
+
+Generated YAML:
+```yaml
+# Starting spawn point
+default-spawn:
+  world: world
+  x: 0
+  y: 64
+  z: 0
 ```
 
 Serializers are also used recursively for `List<T>`, `Set<T>`, and `Map<K, V>` entries when `T`, `K`, or `V` has a registered serializer.

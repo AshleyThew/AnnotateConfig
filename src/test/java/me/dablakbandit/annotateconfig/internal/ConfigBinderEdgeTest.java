@@ -1,5 +1,6 @@
 package me.dablakbandit.annotateconfig.internal;
 
+import me.dablakbandit.annotateconfig.AnnotateConfig;
 import me.dablakbandit.annotateconfig.ConfigHandle;
 import me.dablakbandit.annotateconfig.annotation.ConfigMigrate;
 import me.dablakbandit.annotateconfig.annotation.ConfigOptional;
@@ -79,6 +80,57 @@ class ConfigBinderEdgeTest {
             var yaml = YamlSupport.loadMap(Files.readString(file));
             assertEquals("custom", YamlSupport.getValue(yaml, "optional-name"));
             assertEquals(9, YamlSupport.getValue(yaml, "required-number"));
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
+    @Test
+    void loadPreservesUnknownFieldsWhenConfigured() throws IOException {
+        BinderSimpleConfig.reset();
+        Path file = Files.createTempFile("annotate-config-preserve-unknown", ".yml");
+        try {
+            Files.writeString(file, String.join("\n",
+                    "number: 2",
+                    "unknown-field: should-persist",
+                    ""));
+
+            AnnotateConfig.builder(BinderSimpleConfig.class, file)
+                    .preserveUnknownFields(true)
+                    .build()
+                    .load();
+
+            var yaml = YamlSupport.loadMap(Files.readString(file));
+            assertEquals(2, YamlSupport.getValue(yaml, "number"));
+            assertEquals("should-persist", YamlSupport.getValue(yaml, "unknown-field"));
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
+    @Test
+    void saveCopiesPreservedUnknownFieldsIntoOutput() throws IOException {
+        BinderSimpleConfig.reset();
+        Path file = Files.createTempFile("annotate-config-preserve-on-save", ".yml");
+        try {
+            Files.writeString(file, String.join("\n",
+                    "number: 2",
+                    "custom: original",
+                    ""));
+
+            AnnotateConfig.builder(BinderSimpleConfig.class, file)
+                    .preserveUnknownFields(true)
+                    .build()
+                    .load();
+            BinderSimpleConfig.number = 5;
+            AnnotateConfig.builder(BinderSimpleConfig.class, file)
+                    .preserveUnknownFields(true)
+                    .build()
+                    .save();
+
+            var yaml = YamlSupport.loadMap(Files.readString(file));
+            assertEquals(5, YamlSupport.getValue(yaml, "number"));
+            assertEquals("original", YamlSupport.getValue(yaml, "custom"));
         } finally {
             Files.deleteIfExists(file);
         }

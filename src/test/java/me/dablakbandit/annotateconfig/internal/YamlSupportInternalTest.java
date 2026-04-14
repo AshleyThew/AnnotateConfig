@@ -89,6 +89,33 @@ class YamlSupportInternalTest {
         assertTrue(rendered.contains("count: 3"));
     }
 
+    @Test
+    void removeValueHandlesPartialPathAndCleanupEmptyParents() {
+        Map<String, Object> root = new LinkedHashMap<>();
+        Map<String, Object> nested = new LinkedHashMap<>();
+        nested.put("child", "value");
+        Map<String, Object> deep = new LinkedHashMap<>();
+        deep.put("nested", nested);
+        root.put("parent", deep);
+
+        // Remove lowest leaf and verify empty parent is cleaned
+        Object removed = YamlSupport.removeValue(root, "parent.nested.child");
+        assertEquals("value", removed);
+        assertFalse(root.containsKey("parent"));
+    }
+
+    @Test
+    void injectCommentsHandlesListItemsAndEmptyLines() {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("items", List.of("first", "second"));
+        Map<String, List<String>> comments = new LinkedHashMap<>();
+
+        String result = YamlSupport.dumpWithComments(data, comments, List.of());
+
+        assertTrue(result.contains("- first"));
+        assertTrue(result.contains("- second"));
+    }
+
     static final class SampleBean {
         public String name = "value";
         public int count = 3;

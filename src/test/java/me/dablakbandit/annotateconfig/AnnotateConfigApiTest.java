@@ -74,6 +74,7 @@ class AnnotateConfigApiTest {
 
         assertEquals(2, loaded.value);
         assertEquals(3, MixedConfig.globalValue);
+        assertEquals(loaded, loadHandle.rootInstance());
         assertEquals(loaded, loadHandle.rootInstance(MixedConfig.class));
     }
 

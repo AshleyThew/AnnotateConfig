@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeConverterInternalTest {
     @Test
@@ -131,6 +132,36 @@ class TypeConverterInternalTest {
         assertEquals(123, TypeConverter.convertForField(123, UnhandledType.class, registry));
     }
 
+    @Test
+    void convertsMapsToBeanInstancesAndNestedBeans() {
+        SerializerRegistry registry = new SerializerRegistry();
+
+        Map<String, Object> nested = new LinkedHashMap<>();
+        nested.put("label", 99);
+
+        Map<String, Object> raw = new LinkedHashMap<>();
+        raw.put("count", "7");
+        raw.put("name", 1234);
+        raw.put("nested", nested);
+
+        Object converted = TypeConverter.convertForField(raw, BeanTarget.class, registry);
+        assertInstanceOf(BeanTarget.class, converted);
+
+        BeanTarget bean = (BeanTarget) converted;
+        assertEquals(7, bean.count);
+        assertEquals("1234", bean.name);
+        assertEquals("99", bean.nested.label);
+    }
+
+    @Test
+    void throwsWhenMapToBeanTargetCannotBeInstantiated() {
+        SerializerRegistry registry = new SerializerRegistry();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> TypeConverter.convertForField(Map.of("value", "x"), NoDefaultCtorBean.class, registry));
+        assertTrue(exception.getMessage().contains("Unable to convert map to"));
+    }
+
     private static Type fieldType(String name) throws Exception {
         Field field = GenericTypes.class.getDeclaredField(name);
         return field.getGenericType();
@@ -147,6 +178,21 @@ class TypeConverterInternalTest {
         Mode mode;
         char marker;
         List<Object> values;
+    }
+
+    static final class BeanTarget {
+        int count;
+        String name;
+        BeanNestedTarget nested;
+    }
+
+    static final class BeanNestedTarget {
+        String label;
+    }
+
+    static final class NoDefaultCtorBean {
+        private NoDefaultCtorBean(String value) {
+        }
     }
 
     static final class UnhandledType {
