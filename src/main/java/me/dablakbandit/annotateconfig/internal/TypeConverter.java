@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -53,6 +54,12 @@ final class TypeConverter {
             return raw;
         }
         if (clazz == String.class) {
+            // SnakeYAML writes any string holding a non-printable character as !!binary, and reads
+            // that back as a byte[] of its UTF-8 encoding. String.valueOf would give "[B@1b6d3586",
+            // so decode it to get the original text back.
+            if (raw instanceof byte[]) {
+                return new String((byte[]) raw, StandardCharsets.UTF_8);
+            }
             return String.valueOf(raw);
         }
         if (clazz == int.class || clazz == Integer.class) {
