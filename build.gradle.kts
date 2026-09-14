@@ -5,14 +5,14 @@ plugins {
 }
 
 group = "com.github.AshleyThew"
-version = System.getenv("TAG") ?: "v1.0.1-alpha"
+version = System.getenv("TAG") ?: "v1.0.2-alpha"
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
     withSourcesJar()
     withJavadocJar()
 }
@@ -42,7 +42,14 @@ tasks.jacocoTestReport {
     }
 }
 
-tasks.withType<JavaCompile>().configureEach {
+// The library compiles for Java 8 so plugins that still run on old server JVMs can shade it;
+// --release also stamps the published metadata with JVM 8 so those consumers can resolve it.
+// Tests keep Java 17 syntax.
+tasks.compileJava {
+    options.release = 8
+}
+
+tasks.compileTestJava {
     options.release = 17
 }
 

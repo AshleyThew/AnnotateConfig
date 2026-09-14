@@ -29,7 +29,7 @@ public enum NamingStrategy {
     public abstract String translate(String input);
 
     private static String splitWords(String input, String separator) {
-        if (input == null || input.isBlank()) {
+        if (input == null || input.trim().isEmpty()) {
             return input;
         }
         String normalized = input

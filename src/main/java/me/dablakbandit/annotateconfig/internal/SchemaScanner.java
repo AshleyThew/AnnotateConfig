@@ -40,7 +40,9 @@ public final class SchemaScanner {
             SerializerRegistry serializerRegistry,
             Object providedRootInstance) {
         ConfigRoot root = rootType.getAnnotation(ConfigRoot.class);
-        List<String> header = root == null ? List.of() : List.of(root.header());
+        List<String> header = root == null
+                ? Collections.<String>emptyList()
+                : Collections.unmodifiableList(Arrays.asList(root.header()));
         Map<String, List<String>> comments = new LinkedHashMap<>();
         List<BoundField> fields = new ArrayList<>();
         Object rootInstance = resolveRootInstance(rootType, providedRootInstance);
@@ -247,19 +249,19 @@ public final class SchemaScanner {
     private static List<String> resolveMigrationPaths(Field field, String prefix) {
         ConfigMigrate migrate = field.getAnnotation(ConfigMigrate.class);
         if (migrate == null) {
-            return List.of();
+            return Collections.emptyList();
         }
         List<String> paths = new ArrayList<>(migrate.value().length);
         for (String value : migrate.value()) {
             paths.add(value.contains(".") || prefix.isEmpty() ? value : prefix + "." + value);
         }
-        return List.copyOf(paths);
+        return Collections.unmodifiableList(paths);
     }
 
     private static void addComment(Map<String, List<String>> comments, String path, ConfigComment annotation) {
-        if (annotation == null || path == null || path.isBlank()) {
+        if (annotation == null || path == null || path.trim().isEmpty()) {
             return;
         }
-        comments.put(path, List.of(annotation.value()));
+        comments.put(path, Collections.unmodifiableList(Arrays.asList(annotation.value())));
     }
 }

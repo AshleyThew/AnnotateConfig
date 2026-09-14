@@ -10,9 +10,8 @@ import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,17 +25,17 @@ final class YamlSupport {
     }
 
     static Map<String, Object> loadMap(String content) {
-        if (content == null || content.isBlank()) {
+        if (content == null || content.trim().isEmpty()) {
             return new LinkedHashMap<>();
         }
         Object loaded = LOADER.load(content);
         if (loaded == null) {
             return new LinkedHashMap<>();
         }
-        if (!(loaded instanceof Map<?, ?> map)) {
+        if (!(loaded instanceof Map<?, ?>)) {
             throw new IllegalArgumentException("Root YAML node must be a map");
         }
-        return toLinkedMap(map);
+        return toLinkedMap((Map<?, ?>) loaded);
     }
 
     static String dumpWithComments(Map<String, Object> data, Map<String, List<String>> comments, List<String> header) {
@@ -44,7 +43,6 @@ final class YamlSupport {
         if ("{}\n".equals(dumped)) {
             dumped = "";
         }
-
         StringBuilder builder = new StringBuilder();
         for (String line : header) {
             appendComment(builder, 0, line);
@@ -63,10 +61,10 @@ final class YamlSupport {
     static Object getValue(Map<String, Object> root, String path) {
         Object current = root;
         for (String part : path.split("\\.")) {
-            if (!(current instanceof Map<?, ?> map)) {
+            if (!(current instanceof Map<?, ?>)) {
                 return null;
             }
-            current = map.get(part);
+            current = ((Map<?, ?>) current).get(part);
             if (current == null) {
                 return null;
             }
@@ -99,11 +97,11 @@ final class YamlSupport {
         lineage.add(current);
         for (int index = 0; index < parts.length - 1; index++) {
             Object next = current.get(parts[index]);
-            if (!(next instanceof Map<?, ?> nested)) {
+            if (!(next instanceof Map<?, ?>)) {
                 return null;
             }
             @SuppressWarnings("unchecked")
-            Map<String, Object> nestedMap = (Map<String, Object>) nested;
+            Map<String, Object> nestedMap = (Map<String, Object>) next;
             current = nestedMap;
             lineage.add(current);
         }
@@ -124,7 +122,6 @@ final class YamlSupport {
         int currentDepth = 0;
         List<String> pathParts = new ArrayList<>();
         StringBuilder builder = new StringBuilder();
-
         for (String line : lines) {
             String trimmed = line.trim();
             if (trimmed.isEmpty()) {
@@ -135,7 +132,6 @@ final class YamlSupport {
                 builder.append(line).append('\n');
                 continue;
             }
-
             int depth = indentationDepth(line);
             String key = keyFromLine(trimmed);
             if (key != null) {
@@ -178,7 +174,9 @@ final class YamlSupport {
     }
 
     private static void appendComment(StringBuilder builder, int depth, String comment) {
-        builder.append("  ".repeat(Math.max(0, depth)));
+        for (int index = 0; index < depth; index++) {
+            builder.append("  ");
+        }
         if (comment.startsWith("#")) {
             builder.append(comment);
         } else {
@@ -191,12 +189,12 @@ final class YamlSupport {
         String[] parts = path.split("\\.");
         Object current = root;
         for (int index = 0; index < parts.length - 1; index++) {
-            if (!(current instanceof Map<?, ?> map)) {
+            if (!(current instanceof Map<?, ?>)) {
                 return false;
             }
-            current = map.get(parts[index]);
+            current = ((Map<?, ?>) current).get(parts[index]);
         }
-        return current instanceof Map<?, ?> map && map.containsKey(parts[parts.length - 1]);
+        return current instanceof Map<?, ?> && ((Map<?, ?>) current).containsKey(parts[parts.length - 1]);
     }
 
     private static LinkedHashMap<String, Object> toLinkedMap(Map<?, ?> map) {
@@ -208,10 +206,11 @@ final class YamlSupport {
     }
 
     private static Object toYamlValue(Object value) {
-        if (value instanceof Map<?, ?> map) {
-            return toLinkedMap(map);
+        if (value instanceof Map<?, ?>) {
+            return toLinkedMap((Map<?, ?>) value);
         }
-        if (value instanceof List<?> list) {
+        if (value instanceof List<?>) {
+            List<?> list = (List<?>) value;
             List<Object> converted = new ArrayList<>(list.size());
             for (Object element : list) {
                 converted.add(toYamlValue(element));

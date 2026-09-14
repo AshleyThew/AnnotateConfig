@@ -12,6 +12,7 @@ The library scans a root config class, loads values into static or instance fiel
 ## Features
 
 - No server implementation dependency
+- Compiled for Java 8, so it can be shaded into plugins that still run on old server JVMs
 - Static and instance field binding
 - Commented YAML generation
 - Migration from legacy paths
@@ -72,6 +73,7 @@ handle.save();
 ```
 
 Generated YAML (`config/example.yml`):
+
 ```yaml
 # Example config
 # Generated on load/save
@@ -136,6 +138,7 @@ providedHandle.save();
 ```
 
 Generated YAML (`config/instance.yml`):
+
 ```yaml
 max-retries: 3
 database:
@@ -181,12 +184,14 @@ ConfigHandle handle = AnnotateConfig.builder(ExampleConfig.class, file)
 ```
 
 Example usage in a config:
+
 ```java
 @ConfigComment("Starting spawn point")
 public static SpawnPoint defaultSpawn = new SpawnPoint("world", 0, 64, 0);
 ```
 
 Generated YAML:
+
 ```yaml
 # Starting spawn point
 default-spawn:

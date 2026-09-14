@@ -69,7 +69,7 @@ public final class ConfigBinder {
         }
 
         String rendered = YamlSupport.dumpWithComments(output, schema.comments(), schema.header());
-        Files.writeString(file, rendered, StandardCharsets.UTF_8);
+        Files.write(file, rendered.getBytes(StandardCharsets.UTF_8));
     }
 
     @SuppressWarnings("unchecked")
@@ -77,8 +77,8 @@ public final class ConfigBinder {
         Map<String, Object> copy = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : source.entrySet()) {
             Object value = entry.getValue();
-            if (value instanceof Map<?, ?> nested) {
-                copy.put(entry.getKey(), deepCopy((Map<String, Object>) nested));
+            if (value instanceof Map<?, ?>) {
+                copy.put(entry.getKey(), deepCopy((Map<String, Object>) value));
             } else {
                 copy.put(entry.getKey(), value);
             }
@@ -90,7 +90,7 @@ public final class ConfigBinder {
         if (!Files.exists(file)) {
             return new LinkedHashMap<>();
         }
-        return YamlSupport.loadMap(Files.readString(file, StandardCharsets.UTF_8));
+        return YamlSupport.loadMap(new String(Files.readAllBytes(file), StandardCharsets.UTF_8));
     }
 
     private static void ensureParentExists(Path file) throws IOException {

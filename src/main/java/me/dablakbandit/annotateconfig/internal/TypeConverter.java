@@ -1,5 +1,10 @@
 package me.dablakbandit.annotateconfig.internal;
 
+import me.dablakbandit.annotateconfig.ConfigSerializer;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -18,12 +23,14 @@ final class TypeConverter {
         if (raw == null) {
             return null;
         }
-        if (type instanceof Class<?> clazz) {
-            return convertForClass(raw, clazz, serializerRegistry);
+        if (type instanceof Class<?>) {
+            return convertForClass(raw, (Class<?>) type, serializerRegistry);
         }
-        if (type instanceof ParameterizedType parameterizedType) {
+        if (type instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) type;
             Type rawType = parameterizedType.getRawType();
-            if (rawType instanceof Class<?> rawClass) {
+            if (rawType instanceof Class<?>) {
+                Class<?> rawClass = (Class<?>) rawType;
                 if (Collection.class.isAssignableFrom(rawClass)) {
                     return convertCollection(raw, rawClass, parameterizedType.getActualTypeArguments()[0],
                             serializerRegistry);
@@ -38,7 +45,7 @@ final class TypeConverter {
     }
 
     private static Object convertForClass(Object raw, Class<?> clazz, SerializerRegistry serializerRegistry) {
-        var serializer = serializerRegistry.find(clazz);
+        ConfigSerializer<?> serializer = serializerRegistry.find(clazz);
         if (serializer != null) {
             return serializer.deserialize(raw);
         }
@@ -49,25 +56,25 @@ final class TypeConverter {
             return String.valueOf(raw);
         }
         if (clazz == int.class || clazz == Integer.class) {
-            return raw instanceof Number number ? number.intValue() : Integer.parseInt(String.valueOf(raw));
+            return raw instanceof Number ? ((Number) raw).intValue() : Integer.parseInt(String.valueOf(raw));
         }
         if (clazz == long.class || clazz == Long.class) {
-            return raw instanceof Number number ? number.longValue() : Long.parseLong(String.valueOf(raw));
+            return raw instanceof Number ? ((Number) raw).longValue() : Long.parseLong(String.valueOf(raw));
         }
         if (clazz == double.class || clazz == Double.class) {
-            return raw instanceof Number number ? number.doubleValue() : Double.parseDouble(String.valueOf(raw));
+            return raw instanceof Number ? ((Number) raw).doubleValue() : Double.parseDouble(String.valueOf(raw));
         }
         if (clazz == float.class || clazz == Float.class) {
-            return raw instanceof Number number ? number.floatValue() : Float.parseFloat(String.valueOf(raw));
+            return raw instanceof Number ? ((Number) raw).floatValue() : Float.parseFloat(String.valueOf(raw));
         }
         if (clazz == short.class || clazz == Short.class) {
-            return raw instanceof Number number ? number.shortValue() : Short.parseShort(String.valueOf(raw));
+            return raw instanceof Number ? ((Number) raw).shortValue() : Short.parseShort(String.valueOf(raw));
         }
         if (clazz == byte.class || clazz == Byte.class) {
-            return raw instanceof Number number ? number.byteValue() : Byte.parseByte(String.valueOf(raw));
+            return raw instanceof Number ? ((Number) raw).byteValue() : Byte.parseByte(String.valueOf(raw));
         }
         if (clazz == boolean.class || clazz == Boolean.class) {
-            return raw instanceof Boolean bool ? bool : Boolean.parseBoolean(String.valueOf(raw));
+            return raw instanceof Boolean ? (Boolean) raw : Boolean.parseBoolean(String.valueOf(raw));
         }
         if (clazz == char.class || clazz == Character.class) {
             String value = String.valueOf(raw);
@@ -78,19 +85,19 @@ final class TypeConverter {
             Object enumValue = Enum.valueOf((Class<? extends Enum>) clazz.asSubclass(Enum.class), String.valueOf(raw));
             return enumValue;
         }
-        if (raw instanceof Map<?, ?> map) {
-            return convertMapToBean(map, clazz, serializerRegistry);
+        if (raw instanceof Map<?, ?>) {
+            return convertMapToBean((Map<?, ?>) raw, clazz, serializerRegistry);
         }
         return raw;
     }
 
     private static Object convertMapToBean(Map<?, ?> map, Class<?> clazz, SerializerRegistry serializerRegistry) {
         try {
-            java.lang.reflect.Constructor<?> constructor = clazz.getDeclaredConstructor();
+            Constructor<?> constructor = clazz.getDeclaredConstructor();
             constructor.setAccessible(true);
             Object instance = constructor.newInstance();
-            for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
-                if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
                     continue;
                 }
                 Object rawValue = map.get(field.getName());
@@ -109,9 +116,10 @@ final class TypeConverter {
 
     private static Object convertCollection(Object raw, Class<?> rawClass, Type elementType,
             SerializerRegistry serializerRegistry) {
-        if (!(raw instanceof Collection<?> collection)) {
+        if (!(raw instanceof Collection<?>)) {
             throw new IllegalArgumentException("Expected a collection but got: " + raw.getClass().getName());
         }
+        Collection<?> collection = (Collection<?>) raw;
         Collection<Object> converted = Set.class.isAssignableFrom(rawClass) ? new LinkedHashSet<>() : new ArrayList<>();
         for (Object element : collection) {
             converted.add(convertForField(element, elementType, serializerRegistry));
@@ -120,9 +128,10 @@ final class TypeConverter {
     }
 
     private static Object convertMap(Object raw, Type keyType, Type valueType, SerializerRegistry serializerRegistry) {
-        if (!(raw instanceof Map<?, ?> map)) {
+        if (!(raw instanceof Map<?, ?>)) {
             throw new IllegalArgumentException("Expected a map but got: " + raw.getClass().getName());
         }
+        Map<?, ?> map = (Map<?, ?>) raw;
         Map<Object, Object> converted = new LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : map.entrySet()) {
             Object key = convertForField(entry.getKey(), keyType, serializerRegistry);
@@ -136,37 +145,39 @@ final class TypeConverter {
         if (value == null) {
             return null;
         }
-        if (type instanceof Class<?> clazz) {
-            var serializer = serializerRegistry.find(clazz);
+        if (type instanceof Class<?>) {
+            ConfigSerializer<?> serializer = serializerRegistry.find((Class<?>) type);
             if (serializer != null) {
                 @SuppressWarnings("unchecked")
-                Object serialized = ((me.dablakbandit.annotateconfig.ConfigSerializer<Object>) serializer)
-                        .serialize(value);
+                Object serialized = ((ConfigSerializer<Object>) serializer).serialize(value);
                 return normalizeSerializedValue(serialized);
             }
         }
-        if (value instanceof Enum<?> enumValue) {
-            return enumValue.name();
+        if (value instanceof Enum<?>) {
+            return ((Enum<?>) value).name();
         }
-        if (value instanceof Character character) {
-            return String.valueOf(character);
+        if (value instanceof Character) {
+            return String.valueOf(value);
         }
-        if (value instanceof Collection<?> collection) {
+        if (value instanceof Collection<?>) {
+            Collection<?> collection = (Collection<?>) value;
             List<Object> normalized = new ArrayList<>(collection.size());
             Type elementType = Object.class;
-            if (type instanceof ParameterizedType parameterizedType) {
-                elementType = parameterizedType.getActualTypeArguments()[0];
+            if (type instanceof ParameterizedType) {
+                elementType = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
             for (Object element : collection) {
                 normalized.add(normalizeForYaml(element, elementType, serializerRegistry));
             }
             return normalized;
         }
-        if (value instanceof Map<?, ?> map) {
+        if (value instanceof Map<?, ?>) {
+            Map<?, ?> map = (Map<?, ?>) value;
             Map<Object, Object> normalized = new LinkedHashMap<>();
             Type keyType = Object.class;
             Type valueType = Object.class;
-            if (type instanceof ParameterizedType parameterizedType) {
+            if (type instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) type;
                 keyType = parameterizedType.getActualTypeArguments()[0];
                 valueType = parameterizedType.getActualTypeArguments()[1];
             }
@@ -180,25 +191,27 @@ final class TypeConverter {
     }
 
     private static Object normalizeSerializedValue(Object value) {
-        if (value instanceof Collection<?> collection) {
+        if (value instanceof Collection<?>) {
+            Collection<?> collection = (Collection<?>) value;
             List<Object> normalized = new ArrayList<>(collection.size());
             for (Object element : collection) {
                 normalized.add(normalizeSerializedValue(element));
             }
             return normalized;
         }
-        if (value instanceof Map<?, ?> map) {
+        if (value instanceof Map<?, ?>) {
+            Map<?, ?> map = (Map<?, ?>) value;
             Map<Object, Object> normalized = new LinkedHashMap<>();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 normalized.put(normalizeSerializedValue(entry.getKey()), normalizeSerializedValue(entry.getValue()));
             }
             return normalized;
         }
-        if (value instanceof Enum<?> enumValue) {
-            return enumValue.name();
+        if (value instanceof Enum<?>) {
+            return ((Enum<?>) value).name();
         }
-        if (value instanceof Character character) {
-            return String.valueOf(character);
+        if (value instanceof Character) {
+            return String.valueOf(value);
         }
         return value;
     }
