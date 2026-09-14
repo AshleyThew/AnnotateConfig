@@ -40,8 +40,14 @@ public final class ConfigBinder {
 
             try {
                 if (resolved != null || YamlSupport.containsPath(current, boundField.path())) {
-                    field.set(boundField.target(), TypeConverter.convertForField(resolved, field.getGenericType(),
-                            schema.serializerRegistry()));
+                    Object value = TypeConverter.convertForField(resolved, field.getGenericType(),
+                            schema.serializerRegistry());
+                    // A key written with no value loads as null. A primitive field cannot hold that,
+                    // and Field.set would throw and abort the whole load, so keep its default.
+                    if (value == null && field.getType().isPrimitive()) {
+                        continue;
+                    }
+                    field.set(boundField.target(), value);
                 }
             } catch (IllegalAccessException exception) {
                 throw new IllegalStateException("Unable to set config field: " + field, exception);
